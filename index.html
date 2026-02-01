@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>톨리스트 | 아이의 성장을 과학적으로 예측하세요</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* ─── GLOBAL ─── */
+  * { font-family: 'Inter', -apple-system, sans-serif; box-sizing: border-box; }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: #f1f5f9; }
+  ::-webkit-scrollbar-thumb { background: linear-gradient(180deg,#14B8A6,#3B82F6); border-radius:3px; }
+
+  /* ─── PROGRESS BAR ─── */
+  #progressBar {
+    position:fixed; top:0; left:0; height:3px; width:0%;
+    background:linear-gradient(90deg,#14B8A6,#3B82F6,#8B5CF6);
+    z-index:9999; transition:width .1s linear;
+  }
+
+  /* ─── GRADIENT TEXT ─── */
+  .grad-text {
+    background:linear-gradient(135deg,#14B8A6 0%,#3B82F6 50%,#8B5CF6 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+
+  /* ─── GLASS ─── */
+  .glass {
+    background:rgba(255,255,255,.08); backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px); border:1px solid rgba(255,255,255,.13);
+  }
+
+  /* ─── FLOAT ─── */
+  @keyframes float1 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-18px)} }
+  @keyframes float2 { 0%,100%{transform:translateY(0)} 40%{transform:translateY(-14px)} 70%{transform:translateY(-22px)} }
+
+  /* ─── REVEAL ─── */
+  .reveal {
+    opacity:0; transform:translateY(32px);
+    transition:opacity .85s cubic-bezier(.16,1,.3,1), transform .85s cubic-bezier(.16,1,.3,1);
+  }
+  .reveal.visible { opacity:1; transform:translateY(0); }
+
+  /* ─── GLOW BTN ─── */
+  @keyframes glowPulse {
+    0%,100%{ box-shadow:0 0 24px rgba(20,184,166,.45),0 4px 20px rgba(0,0,0,.25); }
+    50%{ box-shadow:0 0 42px rgba(20,184,166,.7),0 4px 30px rgba(0,0,0,.3); }
+  }
+  .glow-btn { animation:glowPulse 2.4s ease-in-out infinite; }
+
+  /* ─── NAV SCROLL ─── */
+  #navbar { transition:all .35s ease; }
+  #navbar.scrolled {
+    background:rgba(255,255,255,.95); backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px); box-shadow:0 1px 24px rgba(0,0,0,.07);
+  }
+  #navbar.scrolled .nav-title { color:#111827 !important; }
+  #navbar.scrolled .nav-cta {
+    background:linear-gradient(135deg,#14B8A6,#0d9488) !important;
+    color:#fff !important; border-color:transparent !important;
+  }
+
+  /* ─── FLOAT BTN ─── */
+  #floatBtn {
+    position:fixed; bottom:24px; right:24px; z-index:100;
+    opacity:0; transform:translateY(18px) scale(.92);
+    transition:all .4s cubic-bezier(.16,1,.3,1); pointer-events:none;
+  }
+  #floatBtn.show { opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
+
+  /* ─── CHART ANIM ─── */
+  @keyframes drawLine { from{stroke-dashoffset:1200} to{stroke-dashoffset:0} }
+  @keyframes popIn { 0%{opacity:0;transform:scale(0)} 60%{transform:scale(1.15)} 100%{opacity:1;transform:scale(1)} }
+  .line-anim { stroke-dasharray:1200; stroke-dashoffset:1200; }
+  .line-anim.play { animation:drawLine 1.8s cubic-bezier(.4,0,.2,1) forwards; }
+  .line-anim-delay1.play { animation-delay:.3s; }
+  .line-anim-delay2.play { animation-delay:1.6s; }
+  .line-anim-delay3.play { animation-delay:2.4s; }
+  .dot-anim { opacity:0; }
+  .dot-anim.play { animation:popIn .45s cubic-bezier(.16,1,.3,1) forwards; }
+  .dot-d1.play{animation-delay:.7s} .dot-d2.play{animation-delay:1s}
+  .dot-d3.play{animation-delay:1.3s} .dot-d4.play{animation-delay:1.5s}
+  .dot-d5.play{animation-delay:2s} .dot-d6.play{animation-delay:2.9s}
+  .dot-d7.play{animation-delay:3.4s}
+
+  /* ─── CALC INPUTS ─── */
+  .calc-input {
+    background:#f8fafc; border:2px solid #e2e8f0; border-radius:14px;
+    padding:12px 16px; font-size:18px; font-weight:600; color:#1e293b;
+    width:100%; transition:all .3s; outline:none;
+  }
+  .calc-input:focus { border-color:#14B8A6; background:#fff; box-shadow:0 0 0 4px rgba(20,184,166,.12); }
+  .calc-input::placeholder { color:#94a3b8; }
+  .calc-input::-webkit-outer-spin-button,.calc-input::-webkit-inner-spin-button{-webkit-appearance:none}
+  .calc-input[type=number]{-moz-appearance:textfield}
+
+  /* ─── GENDER TOGGLE ─── */
+  .g-btn {
+    flex:1; padding:11px; border-radius:12px; border:2px solid #e2e8f0;
+    background:#f8fafc; font-size:14px; font-weight:600; cursor:pointer;
+    transition:all .3s; color:#64748b; text-align:center;
+  }
+  .g-btn:hover { border-color:#cbd5e1; }
+  .g-btn.on { border-color:#14B8A6; background:linear-gradient(135deg,#f0fdfa,#ccfbf1); color:#0f766e; box-shadow:0 2px 8px rgba(20,184,166,.2); }
+
+  /* ─── RESULT SLIDE ─── */
+  @keyframes resultIn { from{opacity:0;transform:translateY(8px) scale(.96)} to{opacity:1;transform:translateY(0) scale(1)} }
+  .result-slide { animation:resultIn .45s cubic-bezier(.16,1,.3,1) forwards; }
+
+  /* ─── STEP LINE ─── */
+  .step-line {
+    position:absolute; left:28px; top:0; bottom:0; width:3px;
+    background:linear-gradient(180deg,#14B8A6,#3B82F6,#8B5CF6); border-radius:2px; z-index:0;
+  }
+  @media(min-width:640px){ .step-line{left:50%;transform:translateX(-50%)} }
+</style>
+</head>
+<body class="bg-white overflow-x-hidden">
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- PROGRESS BAR                                            -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div id="progressBar"></div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- FLOATING DOWNLOAD BTN                                   -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div id="floatBtn">
+  <a href="https://play.google.com/store/apps/details?id=com.tallest.app" target="_blank"
+     class="flex items-center gap-2.5 bg-gray-900 hover:bg-gray-800 text-white px-5 py-3 rounded-full shadow-xl hover:shadow-2xl transition-all hover:scale-105 text-sm font-bold">
+    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3,20.5v-17c0-.59.34-1.11.84-1.35L13.69,12l-9.85,9.85C3.34,21.61,3,21.09,3,20.5z"/></svg>
+    무료 다운로드
+  </a>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- NAVIGATION                                              -->
+<!-- ════════════════════════════════════════════════════════ -->
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 px-4 py-4">
+  <div class="max-w-6xl mx-auto flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center shadow-md" style="background:linear-gradient(135deg,#14B8A6,#0d9488)">
+        <span class="text-white font-bold text-sm">T</span>
+      </div>
+      <span class="nav-title text-white font-bold text-lg" style="color:#fff;transition:color .3s">톨리스트</span>
+    </div>
+    <a href="https://play.google.com/store/apps/details?id=com.tallest.app" target="_blank"
+       class="nav-cta border border-white border-opacity-25 text-white px-5 py-2 rounded-full font-semibold text-sm transition-all hover:border-opacity-50"
+       style="background:rgba(255,255,255,.1);color:#fff">무료 다운로드</a>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- HERO                                                    -->
+<!-- ════════════════════════════════════════════════════════ -->
+<section class="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-4"
+         style="background:linear-gradient(145deg,#0f172a 0%,#1e293b 35%,#0d4f4f 70%,#134e4a 100%)">
+
+  <!-- Blobs -->
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute top-1/4 -left-16 w-96 h-96 bg-teal-500 opacity-10 rounded-full blur-3xl" style="animation:float1 8s ease-in-out infinite"></div>
+    <div class="absolute top-1/2 -right-12 w-80 h-80 bg-blue-500 opacity-10 rounded-full blur-3xl" style="animation:float2 10s ease-in-out infinite 1s"></div>
+    <div class="absolute bottom-1/4 left-1/3 w-64 h-64 bg-purple-500 opacity-8 rounded-full blur-3xl" style="animation:float1 7s ease-in-out infinite 2s"></div>
+  </div>
+
+  <!-- Floating Pills (lg+) -->
+  <div class="absolute top-36 left-1/6 glass px-4 py-2.5 rounded-full hidden lg:flex items-center gap-2" style="animation:float1 7s ease-in-out infinite">
+    <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+    <span class="text-white text-xs font-medium">KDCA 공식 데이터</span>
+  </div>
+  <div class="absolute top-56 right-1/5 glass px-4 py-2.5 rounded-full hidden lg:flex items-center gap-2" style="animation:float2 9s ease-in-out infinite .5s">
+    <span class="text-blue-300">📈</span>
+    <span class="text-white text-xs font-medium">3가지 예측 방법</span>
+  </div>
+  <div class="absolute bottom-56 left-1/4 glass px-4 py-2.5 rounded-full hidden lg:flex items-center gap-2" style="animation:float1 8s ease-in-out infinite 1s">
+    <span class="text-purple-300">🌱</span>
+    <span class="text-white text-xs font-medium">성장 차트 & 알림</span>
+  </div>
+
+  <!-- Content -->
+  <div class="relative z-10 text-center max-w-4xl mx-auto">
+    <!-- Trust Badge -->
+    <div class="inline-flex items-center gap-2 rounded-full px-5 py-2 mb-8" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18)">
+      <span class="text-yellow-300">🏥</span>
+      <span class="text-white text-sm font-medium opacity-90">질병관리청(KDCA) 공식 데이터 기반</span>
+    </div>
+
+    <!-- Title -->
+    <h1 class="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold text-white leading-[1.1] tracking-tight">
+      우리 아이의<br>
+      <span class="grad-text">최종키</span>
+    </h1>
+    <p class="text-3xl sm:text-4xl font-light text-slate-300 mt-4">정확하게 예측할 수 있습니다</p>
+
+    <!-- Sub -->
+    <p class="text-slate-400 text-base sm:text-lg mt-5 max-w-xl mx-auto leading-relaxed">
+      과학적으로 검증된 <span class="text-white font-semibold">3가지 예측 방법</span>으로<br>
+      아이의 성장 미래를 <span class="text-teal-400 font-semibold">정확하게</span> 그려보세요
+    </p>
+
+    <!-- CTA -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
+      <a href="https://play.google.com/store/apps/details?id=com.tallest.app" target="_blank"
+         class="glow-btn flex items-center gap-3 px-7 py-4 rounded-2xl font-bold text-white text-base transition-all hover:scale-105"
+         style="background:linear-gradient(135deg,#0d9488,#14B8A6)">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M3,20.5v-17c0-.59.34-1.11.84-1.35L13.69,12l-9.85,9.85C3.34,21.61,3,21.09,3,20.5z M17.81,16.12l-2.16,2.16L6.05,8.64l9.6,9.6L17.81,16.12z M20.16,11.05l1.97,1.97c.39.39.39,1.02,0,1.41l-1.97,1.97-2.39-2.39L20.16,11.05z M6.05,3.36l9.6,9.6-2.16,2.16L4.05,5.52z"/></svg>
+        Google Play에서 무료 다운로드
+      </a>
+      <a href="#pain" class="border border-white border-opacity-25 hover:border-opacity-50 text-white px-7 py-4 rounded-2xl font-medium text-base transition-all hover:bg-white hover:bg-opacity-5">
+        기능 둘러보기
+      </a>
+    </div>
+
+    <!-- Stats -->
+    <div class="flex flex-wrap items-center justify-center gap-6 sm:gap-10 mt-14">
+      <div class="text-center">
+        <div class="text-2xl sm:text-3xl font-bold text-teal-400">3가지</div>
+        <div class="text-slate-500 text-xs mt-1">과학적 예측 방법</div>
+      </div>
+      <div class="w-px h-8 bg-slate-700"></div>
+      <div class="text-center">
+        <div class="text-2xl sm:text-3xl font-bold text-blue-400">100%</div>
+        <div class="text-slate-500 text-xs mt-1">무료 사용</div>
+      </div>
+      <div class="w-px h-8 bg-slate-700"></div>
+      <div class="text-center">
+        <div class="text-2xl sm:text-3xl font-bold text-purple-400">KDCA</div>
+        <div class="text-slate-500 text-xs mt-1">공식 데이터</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scroll Indicator -->
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2" style="animation:float1 2s ease-in-out infinite">
+    <div class="w-5 h-9 border-2 border-slate-500 rounded-full flex justify-center pt-1.5">
+      <div class="w-1 h-2 bg-slate-400 rounded-full" style="animation:float1 1.4s ease-in-out infinite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- PAIN POINT                                              -->
+<!-- ════════════════════════════════════════════════════════ -->
+<section id="pain" class="py-20 sm:py-28 px-4 bg-white">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center reveal">
+      <span class="text-red-500 font-semibold text-xs uppercase tracking-widest">부모님의 마음</span>
+      <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mt-3 leading-tight">혹시 이런 생각 드세요?</h2>
+      <p class="text-red-400 text-xl sm:text-2xl font-semibold mt-2">"우리 아이 나중에 얼마나 클까…"</p>
+    </div>
+
+    <div class="grid sm:grid-cols-3 gap-4 sm:gap-5 mt-10">
+      <div class="reveal" style="transition-delay:.05s">
+        <div class="group bg-red-50 border border-red-100 rounded-2xl p-6 text-center hover:shadow-lg hover:border-red-200 transition-all">
+          <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">😰</div>
+          <h3 class="font-bold text-gray-800">불안감</h3>
+          <p class="text-gray-500 text-sm mt-1.5 leading-relaxed">아이가 친구들보다 작아 걱정되는 순간들이 반복됩니다</p>
+        </div>
+      </div>
+      <div class="reveal" style="transition-delay:.13s">
+        <div class="group bg-orange-50 border border-orange-100 rounded-2xl p-6 text-center hover:shadow-lg hover:border-orange-200 transition-all">
+          <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">❓</div>
+          <h3 class="font-bold text-gray-800">불확실성</h3>
+          <p class="text-gray-500 text-sm mt-1.5 leading-relaxed">정확한 답을 찾을 수 없어 불안감이 가중되는 상황</p>
+        </div>
+      </div>
+      <div class="reveal" style="transition-delay:.22s">
+        <div class="group bg-amber-50 border border-amber-100 rounded-2xl p-6 text-center hover:shadow-lg hover:border-amber-200 transition-all">
+          <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">🏥</div>
+          <h3 class="font-bold text-gray-800">반복 방문</h3>
+          <p class="text-gray-500 text-sm mt-1.5 leading-relaxed">성장 클리닉을 자주 방문해야 하는 피로감과 비용</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow -->
+    <div class="text-center mt-12 reveal">
+      <span class="text-slate-400 text-sm block mb-2">이제 이런 걱정 없이</span>
+      <svg class="w-6 h-6 text-teal-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="animation:float1 1.4s ease-in-out infinite">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- APP INTRODUCTION + PHONE MOCKUP                         -->
+<!-- ════════════════════════════════════════════════════════ -->
+<section class="py-20 sm:py-28 px-4" style="background:linear-gradient(180deg,#f0fdfa 0%,#fff 100%)">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center reveal">
+      <div class="inline-flex items-center gap-2 bg-teal-100 text-teal-700 px-4 py-1.5 rounded-full text-sm font-semibold mb-5">
+        <span>🌱</span> 해결책
+      </div>
+      <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight">
+        <span class="grad-text">톨리스트</span>와 함께<br>아이의 미래를 그려보세요
+      </h2>
+      <p class="text-gray-500 text-base sm:text-lg mt-4 max-w-xl mx-auto">
+        단순한 키 기록 앱이 아닙니다.<br>
+        <span class="text-gray-700 font-semibold">의학적으로 검증된</span> 전문 성장 관리 앱입니다.
+      </p>
+    </div>
+
+    <!-- Phone Mockup -->
+    <div class="mt-14 reveal max-w-sm mx-auto">
+      <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 p-3">
+        <div class="rounded-2xl overflow-hidden" style="background:#1a1a2e">
+          <!-- Status -->
+          <div class="flex justify-between items-center px-5 py-2.5">
+            <span class="text-white text-xs font-medium">9:41</span>
+            <div class="w-24 h-5 bg-black rounded-full"></div>
+            <span class="text-white text-xs">●●●</span>
+          </div>
+          <!-- App Header -->
+          <div class="mx-3 px-4 py-3 rounded-xl" style="background:linear-gradient(135deg,#0d9488,#14B8A6)">
+            <div class="flex justify-between items-center">
+              <div>
+                <div class="text-white font-bold text-sm">톨리스트</div>
+                <div class="text-teal-200 text-xs">성장 예측 &amp; 관리</div>
+              </div>
+              <div class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <span class="text-white text-xs">👤</span>
+              </div>
+            </div>
+          </div>
+          <!-- App Body -->
+          <div class="mx-3 mt-3 pb-3 space-y-2.5">
+            <!-- Stats -->
+            <div class="flex gap-2">
+              <div class="flex-1 bg-gray-800 rounded-xl p-3 text-center border border-gray-700">
+                <div class="text-teal-400 font-bold text-lg">151.7</div>
+                <div class="text-gray-500 text-xs">키 (cm)</div>
+                <div class="text-teal-500 text-xs mt-0.5">↑ 42%</div>
+              </div>
+              <div class="flex-1 bg-gray-800 rounded-xl p-3 text-center border border-gray-700">
+                <div class="text-blue-400 font-bold text-lg">42.3</div>
+                <div class="text-gray-500 text-xs">체중 (kg)</div>
+                <div class="text-blue-500 text-xs mt-0.5">↑ 55%</div>
+              </div>
+              <div class="flex-1 bg-gray-800 rounded-xl p-3 text-center border border-gray-700">
+                <div class="text-purple-400 font-bold text-lg">18.4</div>
+                <div class="text-gray-500 text-xs">BMI</div>
+                <div class="text-purple-500 text-xs mt-0.5">정상</div>
+              </div>
+            </div>
+            <!-- Prediction -->
+            <div class="rounded-xl p-4" style="background:linear-gradient(135deg,#0f4c4c,#1a6b5a)">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="text-teal-300 text-xs font-medium">예상 최종키</div>
+                  <div class="flex items-baseline gap-1 mt-1">
+                    <span class="text-white font-extrabold text-3xl">167.3</span>
+                    <span class="text-teal-300 text-sm">cm</span>
+                  </div>
+                  <div class="text-teal-400 text-xs mt-1">뼈나이 기반 · 가장 정확</div>
+                </div>
+                <div class="w-11 h-11 rounded-full flex items-center justify-center" style="background:rgba(20,184,166,.25)">
+                  <span class="text-lg">📈</span>
+                </div>
+              </div>
+            </div>
+            <!-- Mini Chart -->
+            <div class="bg-gray-800 rounded-xl p-3 border border-gray-700">
+              <div class="text-gray-400 text-xs mb-2 font-medium">성장 추세</div>
+              <svg viewBox="0 0 200 55" class="w-full">
+                <polyline points="10,48 40,42 70,35 100,27 130,20" fill="none" stroke="#14B8A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="130,20 160,11 190,4" fill="none" stroke="#60A5FA" stroke-width="1.5" stroke-dasharray="4,3" stroke-linecap="round"/>
+                <circle cx="130" cy="20" r="3" fill="#14B8A6"/>
+                <text x="137" y="17" fill="#6B7280" font-size="7">현재</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 3 PREDICTION METHODS                                    -->
+<!-- ════════════════════════════════════════════════════════ -->
+<section id="features" class="py-20 sm:py-28 px-4 bg-white">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center reveal">
+      <span class="text-teal-600 font-semibold text-xs uppercase tracking-widest">핵심 기능</span>
+      <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mt-3 leading-tight">
+        <span class="grad-text">3가지</span> 과학적 예측 방법
+      </h2>
+      <p class="text-gray-500 mt-3">교차 검증을 통해 가장 신뢰할 수 있는 결과를 제공합니다</p>
+    </div>
+
+    <div class="grid sm:grid-cols-3 gap-5 mt-12">
+      <!-- Method 1: Percentile -->
+      <div class="reveal" style="transition-delay:.07s">
+        <div class="relative bg-white border border-gray-100 rounded-3xl p-5 hover:shadow-xl hover:border-teal-200 transition-all hover:-translate-y-1">
+          <span class="absolute -top-3 left-5 bg-teal-600 text-white text-xs font-bold px-3 py-0.5 rounded-full shadow-sm">방법 01</span>
+          <div class="w-13 h-13 rounded-2xl flex items-center justify-center mt-2 mb-4" style="background:linear-gradient(135deg,#ccfbf1,#a7f3d0); width:52px; height:52px">
+            <span class="text-2xl">📊</span>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900">백분위 기반 예측</h3>
+          <p class="text-gray-500 text-sm mt-2 leading-relaxed">KDCA 공식 LMS 표준도표를 기반으로 현재 성장 추세를 유지했을 때의 예상키를 계산합니다.</p>
+          <div class="mt-4 bg-teal-50 rounded-xl p-3.5">
+            <div class="flex justify-between items-center">
+              <span class="text-gray-500 text-xs">예측 결과</span>
+              <span class="text-teal-700 font-bold text-sm">163.4 cm</span>
+            </div>
+            <div class="mt-2 bg-white rounded-full h-2 overflow-hidden">
+              <div class="h-full rounded-full" style="width:65%;background:linear-gradient(90deg,#14B8A6,#34d399)"></div>
+            </div>
+            <div class="flex justify-between mt-1.5">
+              <span class="text-teal-600 text-xs font-medium">백분위 상위 65%</span>
+              <span class="text-gray-400 text-xs">100명 중 35번째</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Method 2: Bone Age (highlighted) -->
+      <div class="reveal" style="transition-delay:.15s">
+        <div class="relative rounded-3xl p-0.5 hover:-translate-y-1 transition-all" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9)">
+          <div class="bg-white rounded-3xl p-5 h-full">
+            <div class="absolute -top-3 left-5 flex gap-2 z-10">
+              <span class="bg-purple-600 text-white text-xs font-bold px-3 py-0.5 rounded-full shadow-sm">방법 02</span>
+              <span class="bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-0.5 rounded-full shadow-sm">⭐ 최정확</span>
+            </div>
+            <div class="rounded-2xl flex items-center justify-center mt-2 mb-4" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe); width:52px; height:52px">
+              <span class="text-2xl">🦴</span>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900">뼈나이 기반 예측</h3>
+            <p class="text-gray-500 text-sm mt-2 leading-relaxed">Greulich-Pyle + Bayley-Pinneau 국제 표준 방법으로 골연령 검사 결과를 활용한 가장 정확한 예측입니다.</p>
+            <div class="mt-4 bg-purple-50 rounded-xl p-3.5">
+              <div class="flex justify-between items-center">
+                <span class="text-gray-500 text-xs">예측 결과</span>
+                <span class="text-purple-700 font-bold text-sm">167.3 cm</span>
+              </div>
+              <div class="mt-2 bg-white rounded-full h-2 overflow-hidden">
+                <div class="h-full rounded-full" style="width:78%;background:linear-gradient(90deg,#8B5CF6,#a78bfa)"></div>
+              </div>
+              <div class="flex justify-between mt-1.5">
+                <span class="text-purple-600 text-xs font-medium">뼈나이 13.5세 기준</span>
+                <span class="text-gray-400 text-xs">실제 나이와 비교</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Method 3: Genetic -->
+      <div class="reveal" style="transition-delay:.24s">
+        <div class="relative bg-white border border-gray-100 rounded-3xl p-5 hover:shadow-xl hover:border-blue-200 transition-all hover:-translate-y-1">
+          <span class="absolute -top-3 left-5 bg-blue-600 text-white text-xs font-bold px-3 py-0.5 rounded-full shadow-sm">방법 03</span>
+          <div class="rounded-2xl flex items-center justify-center mt-2 mb-4" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe); width:52px; height:52px">
+            <span class="text-2xl">🧬</span>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900">유전키 예측 (MPH)</h3>
+          <p class="text-gray-500 text-sm mt-2 leading-relaxed">부모님의 키를 기반으로 유전적 잠재키를 계산합니다. 남아/여아별 공식을 적용한 MPH 방법입니다.</p>
+          <div class="mt-4 bg-blue-50 rounded-xl p-3.5">
+            <div class="text-gray-500 text-xs mb-1.5 font-medium">공식</div>
+            <div class="text-xs font-mono bg-blue-100 rounded-lg p-2.5 text-blue-700 leading-relaxed">
+              남아: (아버지키 + 어머니키 + 13) ÷ 2<br>
+              여아: (아버지키 + 어머니키 − 13) ÷ 2
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cross validation note -->
+    <div class="reveal mt-7">
+      <div class="rounded-2xl p-5 text-center" style="background:linear-gradient(135deg,#0d9488,#2563eb)">
+        <p class="text-white font-semibold text-base">📌 세 가지 방법의 결과를 <strong>교차 검증</strong>하여 가장 신뢰할 수 있는 예측을 제공합니다</p>
+        <p class="text-teal-200 text-sm mt-1.5">예측 차이가 클수록 각 방법의 강점을 활용한 종합 분석이 더 정확해집니다</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- INTERACTIVE CALCULATOR                                  -->
+<!-- ════════════════════════════════════════════════════════ -->
+<section class="py-20 sm:py-28 px-4" style="background:linear-gradient(180deg,#f8fafc 0%,#fff 100%)">
+  <div class="max-w-2xl mx-auto">
+    <div class="text-center reveal">
+      <div class="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full text-sm font-semibold mb-5">
+        <span>🧬</span> 직접 해보세요
+      </div>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight">
+        유전키 예측기<br><span class="grad-text">지금 바로 체험</span>
+      </h2>
+      <p class="text-gray-500 mt-3 text-sm">부모님의 키만 입력하면 아이의 유전적 잠재키를 즉각 계산합니다</p>
+    </div>
+
+    <div class="mt-10 reveal bg-white rounded-3xl shadow-xl border border-gray-100 p-6 sm:p-8">
+      <!-- Gender Toggle -->
+      <div class="mb-5">
+        <label class="block text-gray-600 text-sm font-semibold mb-2">아이의 성별</label>
+        <div class="flex gap-3">
+          <button class="g-btn on" id="btnMale" onclick="setGender('male')">👦 남아</button>
+          <button class="g-btn" id="btnFemale" onclick="setGender('female')">👧 여아</button>
+        </div>
+      </div>
+      <!-- Father -->
+      <div class="mb-4">
+        <label class="block text-gray-600 text-sm font-semibold mb-2">아버지 키 (cm)</label>
+        <input type="number" class="calc-input" id="fatherH" placeholder="예: 175" oninput="calcHeight()">
+      </div>
+      <!-- Mother -->
+      <div class="mb-5">
+        <label class="block text-gray-600 text-sm font-semibold mb-2">어머니 키 (cm)</label>
+        <input type="number" class="calc-input" id="motherH" placeholder="예: 160" oninput="calcHeight()">
+      </div>
+
+      <!-- Result -->
+      <div id="calcResult" class="overflow-hidden" style="max-height:0;transition:max-height .5s cubic-bezier(.16,1,.3,1)">
+        <div class="result-slide mt-2 rounded-2xl p-5" style="background:linear-gradient(135deg,#0d9488,#14B8A6)">
+          <div class="text-teal-200 text-xs font-medium text-center">예상 유전키</div>
+          <div class="text-center mt-1">
+            <span class="text-white font-extrabold text-5xl" id="calcNum">0</span>
+            <span class="text-teal-200 text-xl"> cm</span>
+          </div>
+          <div class="text-teal-300 text-xs text-center mt-2" id="calcGender">남아 기준</div>
+          <!-- bar -->
+          <div class="mt-4 bg-teal-800 rounded-full h-2 overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-700" id="calcBar" style="width:0%;background:linear-gradient(90deg,#34d399,#6ee7b7)"></div>
+          </div>
+          <div class="flex justify-between mt-1.5 text-teal-400 text-xs">
+            <span>평균 이하</span><span>평균</span><span>평균 이상</span>
+          </div>
+        </div>
+        <p class="text-gray-400 text-xs text-center mt-4">* 유전키는 참고용입니다. 정확한 예측은 톨리스트 앱에서 3가지 방법으로 교차 검증하세요</p>
+      </div>
+
+      <!-- CTA inside calc -->
+      <a href="https://play.google.com/store/apps/details?id=com.tallest.app" target="_blank"
+         class="block mt-5 text-center text-teal-600 hover:text-teal-700 font-semibold text-sm border border-teal-200 hover:border-teal-400 rounded-xl py-3 transition-all hover:bg-teal-50">
+        톨리스트 앱에서 정밀 예측 시작 →
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- GROWTH CHART                                            -->
+<!-- ════════════════════════════════════════════════════════ -->
+<section class="py-20 sm:py-28 px-4 bg-gray-900" id="chartSection">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center reveal">
+      <span class="text-teal-400 font-semibold text-xs uppercase tracking-widest">시각화</span>
+      <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mt-3 leading-tight">
+        성장 차트로<br><span class="grad-text">미래를 그려보세요</span>
+      </h2>
+      <p class="text-gray-400 mt-3">과거 · 현재 · 미래를 한눈에 확인하는 직관적인 차트</p>
+    </div>
+
+    <div class="mt-12 reveal">
+      <div class="bg-gray-800 rounded-3xl p-4 sm:p-6 border border-gray-700">
+        <!-- Legend -->
+        <div class="flex flex-wrap justify-center gap-4 mb-5">
+          <div class="flex items-center gap-1.5"><div class="w-5 h-1.5 bg-teal-500 rounded"></div><span class="text-gray-300 text-xs">실제 측정 키</span></div>
+          <div class="flex items-center gap-1.5"><div class="w-5 h-1.5 border-t-2 border-dashed border-blue-400"></div><span class="text-gray-300 text-xs">예상키(백분위)</span></div>
+          <div class="flex items-center gap-1.5"><div class="w-5 h-1.5 bg-purple-400 rounded"></div><span class="text-gray-300 text-xs">예상키(뼈나이)</span></div>
+          <div class="flex items-center gap-1.5"><div class="w-5 h-1.5 border-t border-dashed border-gray-500"></div><span class="text-gray-300 text-xs">기준선</span></div>
+        </div>
+
+        <!-- SVG Chart -->
+        <svg viewBox="0 0 780 280" class="w-full" id="growthChart">
+          <!-- Y labels -->
+          <text x="48" y="38" fill="#6B7280" font-size="10" text-anchor="end">180</text>
+          <text x="48" y="88" fill="#6B7280" font-size="10" text-anchor="end">170</text>
+          <text x="48" y="138" fill="#6B7280" font-size="10" text-anchor="end">160</text>
+          <text x="48" y="188" fill="#6B7280" font-size="10" text-anchor="end">150</text>
+          <text x="48" y="238" fill="#6B7280" font-size="10" text-anchor="end">140</text>
+          <!-- Grid H -->
+          <line x1="55" y1="35" x2="740" y2="35" stroke="#374151" stroke-width=".6" stroke-dasharray="5,4"/>
+          <line x1="55" y1="85" x2="740" y2="85" stroke="#374151" stroke-width=".6" stroke-dasharray="5,4"/>
+          <line x1="55" y1="135" x2="740" y2="135" stroke="#374151" stroke-width=".6" stroke-dasharray="5,4"/>
+          <line x1="55" y1="185" x2="740" y2="185" stroke="#374151" stroke-width=".6" stroke-dasharray="5,4"/>
+          <line x1="55" y1="235" x2="740" y2="235" stroke="#374151" stroke-width=".6" stroke-dasharray="5,4"/>
+          <!-- Axes -->
+          <line x1="55" y1="15" x2="55" y2="250" stroke="#374151" stroke-width="1"/>
+          <line x1="55" y1="250" x2="740" y2="250" stroke="#374151" stroke-width="1"/>
+          <!-- X labels -->
+          <text x="110" y="268" fill="#6B7280" font-size="9" text-anchor="middle">8세</text>
+          <text x="220" y="268" fill="#6B7280" font-size="9" text-anchor="middle">9세</text>
+          <text x="330" y="268" fill="#6B7280" font-size="9" text-anchor="middle">10세</text>
+          <text x="440" y="268" fill="#6B7280" font-size="9" text-anchor="middle">11세</text>
+          <text x="540" y="268" fill="#6B7280" font-size="9" text-anchor="middle">12세</text>
+          <text x="640" y="268" fill="#6B7280" font-size="9" text-anchor="middle">14세</text>
+          <text x="720" y="268" fill="#6B7280" font-size="9" text-anchor="middle">18세</text>
+
+          <!-- Percentile reference -->
+          <line x1="55" y1="60" x2="740" y2="60" stroke="#4B5563" stroke-width=".7" stroke-dasharray="7,4"/>
+          <text x="745" y="63" fill="#4B5563" font-size="8">상위10%</text>
+          <line x1="55" y1="110" x2="740" y2="110" stroke="#4B5563" stroke-width=".7" stroke-dasharray="7,4"/>
+          <text x="745" y="113" fill="#4B5563" font-size="8">평균</text>
+          <line x1="55" y1="165" x2="740" y2="165" stroke="#4B5563" stroke-width=".7" stroke-dasharray="7,4"/>
+          <text x="745" y="168" fill="#4B5563" font-size="8">하위10%</text>
+
+          <!-- Past/Future divider -->
+          <line x1="540" y1="15" x2="540" y2="250" stroke="#6B7280" stroke-width=".8" stroke-dasharray="4,4" class="dot-anim dot-d3" id="dividerLine"/>
+          <text x="520" y="28" fill="#6B7280" font-size="8" text-anchor="end" class="dot-anim dot-d3">← 과거·현재</text>
+          <text x="555" y="28" fill="#6B7280" font-size="8" text-anchor="start" class="dot-anim dot-d3">미래 →</text>
+
+          <!-- Area under actual -->
+          <path d="M110,218 L220,202 L330,185 L440,168 L540,148 L540,250 L110,250 Z" fill="#14B8A6" fill-opacity=".04"/>
+
+          <!-- Actual line (solid teal) -->
+          <polyline points="110,218 220,202 330,185 440,168 540,148"
+                    fill="none" stroke="#14B8A6" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"
+                    class="line-anim" id="lineActual"/>
+          <!-- Predicted percentile (dashed blue) -->
+          <polyline points="540,148 640,112 720,88"
+                    fill="none" stroke="#60A5FA" stroke-width="2.2" stroke-dasharray="7,4" stroke-linecap="round" stroke-linejoin="round"
+                    class="line-anim line-anim-delay2" id="linePredPct"/>
+          <!-- Predicted bone age (solid purple) -->
+          <polyline points="540,148 640,90 720,62"
+                    fill="none" stroke="#A78BFA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+                    class="line-anim line-anim-delay3" id="linePredBone"/>
+
+          <!-- Data dots on actual -->
+          <circle cx="110" cy="218" r="4" fill="#14B8A6" class="dot-anim dot-d1"/>
+          <circle cx="220" cy="202" r="4" fill="#14B8A6" class="dot-anim dot-d2"/>
+          <circle cx="330" cy="185" r="4" fill="#14B8A6" class="dot-anim dot-d3"/>
+          <circle cx="440" cy="168" r="4" fill="#14B8A6" class="dot-anim dot-d4"/>
+          <!-- Current big dot -->
+          <circle cx="540" cy="148" r="6" fill="#14B8A6" stroke="#1a1a2e" stroke-width="3" class="dot-anim dot-d5"/>
+          <!-- Current label -->
+          <rect x="548" y="132" width="40" height="18" rx="5" fill="#14B8A6" class="dot-anim dot-d5"/>
+          <text x="568" y="145" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle" class="dot-anim dot-d5">현재</text>
+
+          <!-- Future labels -->
+          <text x="720" y="78" fill="#60A5FA" font-size="9" font-weight="bold" text-anchor="middle" class="dot-anim dot-d6">163.4cm</text>
+          <text x="720" y="52" fill="#A78BFA" font-size="9" font-weight="bold" text-anchor="middle" class="dot-anim dot-d7">167.3cm</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Stats below chart -->
+    <div class="grid sm:grid-cols-3 gap-4 mt-6">
+      <div class="reveal" style="transition-delay:.08s">
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4 text-center">
+          <div class="text-teal-400 font-bold text-2xl">151.7</div>
+          <div class="text-gray-400 text-xs mt-0.5">현재 키 (cm)</div>
+          <div class="text-teal-300 text-xs mt-1.5">백분위 상위 42%</div>
+        </div>
+      </div>
+      <div class="reveal" style="transition-delay:.16s">
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4 text-center">
+          <div class="text-blue-400 font-bold text-2xl">163.4</div>
+          <div class="text-gray-400 text-xs mt-0.5">예상키 · 백분위 (cm)</div>
+          <div class="text-blue-300 text-xs mt-1.5">현재 추세 유지 시</div>
+        </div>
+      </div>
+      <div class="reveal" style="transition-delay:.25s">
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4 text-center">
+          <div class="text-purple-400 font-bold text-2xl">167.3</div>
+          <div class="text-gray-400 text-xs mt-0.5">예상키 · 뼈나이 (cm)</div>
+          <div class="text-purple-300 text-xs mt-1.5">가장 정확한 예측</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- HOW TO START – 4 STEPS                                  -->
+<!-- ════════════════════════════════════════════════════════ -->
+<section class="py-20 sm:py-28 px-4 bg-white">
+  <div class="max-w-2xl mx-auto">
+    <div class="text-center reveal">
+      <span class="text-blue-600 font-semibold text-xs uppercase tracking-widest">시작하기</span>
+      <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mt-3 leading-tight">
+        <span class="grad-text">4단계</span>만으로 시작
+      </h2>
+      <p class="text-gray-500 mt-3">입력만 완료하면 예측 결과가 자동으로 생성됩니다</p>
+    </div>
+
+    <div class="mt-12 relative">
+      <div class="step-line"></div>
+      <div class="space-y-6">
+        <!-- Step 1 -->
+        <div class="reveal flex items-center gap-5 sm:gap-6" style="transition-delay:.06s">
+          <div class="relative z-10 flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg" style="background:linear-gradient(135deg,#14B8A6,#0d9488)">
+            <span class="text-white font-bold text-xl">1</span>
+          </div>
+          <div class="bg-teal-50 border border-teal-100 rounded-xl p-4 flex-1 hover:shadow-md transition-all">
+            <h3 class="font-bold text-gray-900">아이 이름 입력</h3>
+            <p class="text-gray-500 text-sm mt-0.5">간단히 아이의 이름만 입력하면 됩니다</p>
+          </div>
+        </div>
+        <!-- Step 2 -->
+        <div class="reveal flex items-center gap-5 sm:gap-6" style="transition-delay:.14s">
+          <div class="relative z-10 flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg" style="background:linear-gradient(135deg,#3B82F6,#2563eb)">
+            <span class="text-white font-bold text-xl">2</span>
+          </div>
+          <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 flex-1 hover:shadow-md transition-all">
+            <h3 class="font-bold text-gray-900">성별 선택</h3>
+            <p class="text-gray-500 text-sm mt-0.5">남아 / 여아를 선택하면 성별별 공식이 자동 적용됩니다</p>
+          </div>
+        </div>
+        <!-- Step 3 -->
+        <div class="reveal flex items-center gap-5 sm:gap-6" style="transition-delay:.22s">
+          <div class="relative z-10 flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">
+            <span class="text-white font-bold text-xl">3</span>
+          </div>
+          <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex-1 hover:shadow-md transition-all">
+            <h3 class="font-bold text-gray-900">생년월일 입력</h3>
+            <p class="text-gray-500 text-sm mt-0.5">정확한 연령 계산을 위해 생년월일을 입력합니다</p>
+          </div>
+        </div>
+        <!-- Step 4 -->
+        <div class="reveal flex items-center gap-5 sm:gap-6" style="transition-delay:.3s">
+          <div class="relative z-10 flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9)">
+            <span class="text-white font-bold text-lg">✓</span>
+          </div>
+          <div class="flex-1 rounded-xl p-4 hover:shadow-md transition-all" style="background:linear-gradient(135deg,#f0fdfa,#ede9fe);border:1px solid #c4b5fd">
+            <h3 class="font-bold text-gray-900">첫 키 기록 추가 → 결과!</h3>
+            <p class="text-gray-600 text-sm mt-0.5">키만 기록하면 <span class="text-purple-600 font-semibold">백분위와 예상키가 자동 계산</span>됩니다!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- TESTIMONIALS                                            -->
+<!-- ════════════════════════════════════════════════════════ -->
+<section class="py-20 sm:py-28 px-4" style="background:linear-gradient(180deg,#f8fafc 0%,#fff 100%)">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center reveal">
+      <span class="text-yellow-600 font-semibold text-xs uppercase tracking-widest">부모님 후기</span>
+      <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mt-3 leading-tight">
+        실제 사용자의<br><span class="grad-text">진짜 경험</span>
+      </h2>
+    </div>
+
+    <div class="grid sm:grid-cols-3 gap-5 mt-12">
+      <!-- T1 -->
+      <div class="reveal" style="transition-delay:.07s">
+        <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-all h-full flex flex-col">
+          <div class="flex gap-0.5 mb-3"><span class="text-yellow-400">★</span><span class="text-yellow-400">★</span><span class="text-yellow-400">★</span><span class="text-yellow-400">★</span><span class="text-yellow-400">★</span></div>
+          <p class="text-gray-700 text-sm leading-relaxed flex-1">"병원에서 뼈나이 검사를 받았는데, <strong>톨리스트로 미리 예측한 값이랑 거의 똑같아서</strong> 놀랐어요! 정확도가 정말 높습니다."</p>
+          <div class="mt-4 flex items-center gap-3 pt-3 border-t border-gray-100">
+            <div class="w-9 h-9 bg-teal-100 rounded-full flex items-center justify-center text-sm">👨‍👦</div>
+            <div><div class="text-gray-900 font-semibold text-sm">김**님</div><div class="text-gray-400 text-xs">11세 남아 부모님</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- T2 -->
+      <div class="reveal" style="transition-delay:.16s">
+        <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-all h-full flex flex-col">
+          <div class="flex gap-0.5 mb-3"><span class="text-yellow-400">★</span><span class="text-yellow-400">★</span><span class="text-yellow-400">★</span><span class="text-yellow-400">★</span><span class="text-yellow-400">★</span></div>
+          <p class="text-gray-700 text-sm leading-relaxed flex-1">"여러 예측 방법을 비교할 수 있어서 좋아요. <strong>단순히 키만 재는 게 아니라 성장을 진짜 이해</strong>하게 됐어요."</p>
+          <div class="mt-4 flex items-center gap-3 pt-3 border-t border-gray-100">
+            <div class="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-sm">👩‍👧</div>
+            <div><div class="text-gray-900 font-semibold text-sm">이**님</div><div class="text-gray-400 text-xs">9세 여아 부모님</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- T3 -->
+      <div class="reveal" style="transition-delay:.26s">
+        <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-all h-full flex flex-col">
+          <div class="flex gap-0.5 mb-3"><span class="text-yellow-400">★</span><span class="text-yellow-400">★</span><span class="text-yellow-400">★</span><span class="text-yellow-400">★</span><span class="text-yellow-400">★</span></div>
+          <p class="text-gray-700 text-sm leading-relaxed flex-1">"<strong>차트가 정말 보기 좋고</strong>, 백분위 변화를 한눈에 볼 수 있어 좋습니다. 매달 변화를 추적하는 게 재미있어요."</p>
+          <div class="mt-4 flex items-center gap-3 pt-3 border-t border-gray-100">
+            <div class="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center text-sm">👨‍👦</div>
+            <div><div class="text-gray-900 font-semibold text-sm">박**님</div><div class="text-gray-400 text-xs">14세 남아 부모님</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- TRUST / AUTHORITY                                       -->
+<!-- ════════════════════════════════════════════════════════ -->
+<section class="py-20 sm:py-28 px-4 bg-white">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center reveal">
+      <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900">
+        <span class="grad-text">신뢰할 수 있는</span> 이유
+      </h2>
+    </div>
+
+    <div class="grid sm:grid-cols-3 gap-6 mt-12">
+      <div class="reveal" style="transition-delay:.07s">
+        <div class="text-center p-5">
+          <div class="w-18 h-18 mx-auto rounded-2xl flex items-center justify-center shadow-lg" style="background:linear-gradient(135deg,#14B8A6,#0d9488); width:72px; height:72px">
+            <span class="text-3xl">🏛️</span>
+          </div>
+          <h3 class="font-bold text-gray-900 text-lg mt-4">KDCA 공식 데이터</h3>
+          <p class="text-gray-500 text-sm mt-2 leading-relaxed">질병관리청의 공식 성장도표 데이터를 사용하여 한국 아동에 최적화된 분석을 제공합니다</p>
+        </div>
+      </div>
+      <div class="reveal" style="transition-delay:.16s">
+        <div class="text-center p-5">
+          <div class="mx-auto rounded-2xl flex items-center justify-center shadow-lg" style="background:linear-gradient(135deg,#3B82F6,#2563eb); width:72px; height:72px">
+            <span class="text-3xl">🌍</span>
+          </div>
+          <h3 class="font-bold text-gray-900 text-lg mt-4">국제 표준 방법</h3>
+          <p class="text-gray-500 text-sm mt-2 leading-relaxed">Greulich-Pyle, Bayley-Pinneau 등 세계적으로 검증된 예측 방법을 적용합니다</p>
+        </div>
+      </div>
+      <div class="reveal" style="transition-delay:.26s">
+        <div class="text-center p-5">
+          <div class="mx-auto rounded-2xl flex items-center justify-center shadow-lg" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9); width:72px; height:72px">
+            <span class="text-3xl">🔬</span>
+          </div>
+          <h3 class="font-bold text-gray-900 text-lg mt-4">교차 검증 시스템</h3>
+          <p class="text-gray-500 text-sm mt-2 leading-relaxed">3가지 방법의 결과를 비교·분석하여 오차를 최소화하고 신뢰도를 높입니다</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- FINAL CTA                                               -->
+<!-- ════════════════════════════════════════════════════════ -->
+<section id="download" class="py-24 sm:py-32 px-4" style="background:linear-gradient(135deg,#0d9488 0%,#2563eb 50%,#7c3aed 100%)">
+  <div class="max-w-4xl mx-auto text-center">
+    <div class="reveal">
+      <h2 class="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white leading-[1.15]">
+        우리 아이의 성장<br>
+        더 이상 <span class="underline decoration-yellow-300 underline-offset-4">궁금해하지</span> 만세요
+      </h2>
+      <p class="text-white text-opacity-80 text-lg sm:text-xl mt-5 max-w-xl mx-auto">
+        지금 바로 다운로드하여 과학적으로 예측하고,<br>체계적으로 관리하세요
+      </p>
+
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
+        <a href="https://play.google.com/store/apps/details?id=com.tallest.app" target="_blank"
+           class="bg-white text-teal-700 hover:text-teal-800 px-8 py-4 rounded-2xl font-bold text-lg flex items-center gap-3 transition-all hover:scale-105 shadow-xl hover:shadow-2xl">
+          <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M3,20.5v-17c0-.59.34-1.11.84-1.35L13.69,12l-9.85,9.85C3.34,21.61,3,21.09,3,20.5z M17.81,16.12l-2.16,2.16L6.05,8.64l9.6,9.6L17.81,16.12z M20.16,11.05l1.97,1.97c.39.39.39,1.02,0,1.41l-1.97,1.97-2.39-2.39L20.16,11.05z M6.05,3.36l9.6,9.6-2.16,2.16L4.05,5.52z"/></svg>
+          <div class="text-left">
+            <div class="text-xs text-teal-500 font-normal uppercase tracking-wide">GET IT ON</div>
+            <div class="font-bold">Google Play</div>
+          </div>
+        </a>
+      </div>
+
+      <div class="flex items-center justify-center gap-6 mt-8 flex-wrap">
+        <div class="flex items-center gap-1.5 text-white text-opacity-70 text-sm"><span>✓</span> 완전 무료</div>
+        <div class="flex items-center gap-1.5 text-white text-opacity-70 text-sm"><span>✓</span> KDCA 공식 데이터</div>
+        <div class="flex items-center gap-1.5 text-white text-opacity-70 text-sm"><span>✓</span> iOS 출시 예정</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- FOOTER                                                  -->
+<!-- ════════════════════════════════════════════════════════ -->
+<footer class="bg-gray-900 py-10 px-4">
+  <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-5">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#14B8A6,#0d9488)">
+        <span class="text-white font-bold text-sm">T</span>
+      </div>
+      <div>
+        <div class="text-white font-bold">톨리스트</div>
+        <div class="text-gray-500 text-xs">성장 예측 &amp; 키 성장 관리</div>
+      </div>
+    </div>
+    <div class="text-gray-500 text-sm text-center">
+      <p>KDCA 공식 데이터 기반 · Android · 무료</p>
+      <p class="mt-0.5">© 2025 Tallest App. All rights reserved.</p>
+    </div>
+    <a href="https://play.google.com/store/apps/details?id=com.tallest.app" target="_blank"
+       class="text-teal-400 hover:text-teal-300 text-sm font-semibold border border-teal-400 hover:border-teal-300 px-5 py-2 rounded-full transition-all">다운로드 →</a>
+  </div>
+</footer>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT                                              -->
+<!-- ════════════════════════════════════════════════════════ -->
+<script>
+// ─── SCROLL REVEAL ───
+const reveals = document.querySelectorAll('.reveal');
+const revealObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+reveals.forEach(el => revealObs.observe(el));
+
+// ─── PROGRESS BAR ───
+window.addEventListener('scroll', () => {
+  const pct = (window.scrollY / (document.documentElement.scrollHeight - innerHeight)) * 100;
+  document.getElementById('progressBar').style.width = pct + '%';
+});
+
+// ─── NAV ON SCROLL ───
+const nav = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 80);
+});
+
+// ─── FLOAT BTN ON SCROLL ───
+const floatBtn = document.getElementById('floatBtn');
+window.addEventListener('scroll', () => {
+  floatBtn.classList.toggle('show', window.scrollY > window.innerHeight * 0.8);
+});
+
+// ─── SMOOTH SCROLL ───
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const t = document.querySelector(a.getAttribute('href'));
+    if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+// ─── CHART ANIMATION ───
+const chartObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.querySelectorAll('.line-anim, .dot-anim').forEach(el => el.classList.add('play'));
+      chartObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.3 });
+const chart = document.getElementById('growthChart');
+if (chart) chartObs.observe(chart);
+
+// ─── INTERACTIVE CALCULATOR ───
+let gender = 'male';
+
+function setGender(g) {
+  gender = g;
+  document.getElementById('btnMale').classList.toggle('on', g === 'male');
+  document.getElementById('btnFemale').classList.toggle('on', g === 'female');
+  calcHeight();
+}
+
+function calcHeight() {
+  const f = parseFloat(document.getElementById('fatherH').value);
+  const m = parseFloat(document.getElementById('motherH').value);
+  if (!f || !m || f < 100 || f > 250 || m < 100 || m > 250) {
+    document.getElementById('calcResult').style.maxHeight = '0';
+    return;
+  }
+  const result = gender === 'male' ? (f + m + 13) / 2 : (f + m - 13) / 2;
+
+  document.getElementById('calcNum').textContent = result.toFixed(1);
+  document.getElementById('calcGender').textContent = (gender === 'male' ? '남아' : '여아') + ' 기준 유전키';
+
+  // Bar: Korean avg male ~173, female ~161. Map around average.
+  const avg = gender === 'male' ? 173 : 161;
+  const barPct = Math.max(10, Math.min(90, 50 + (result - avg) * 3));
+  document.getElementById('calcBar').style.width = barPct + '%';
+
+  const el = document.getElementById('calcResult');
+  el.style.maxHeight = '320px';
+}
+</script>
+</body>
+</html>
